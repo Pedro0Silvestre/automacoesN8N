@@ -1,0 +1,298 @@
+{
+  "name": "exerciciosAutomaticos",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "video POV",
+        "formDescription": "Gerar videos POV",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "INPUT",
+              "fieldType": "file",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        660,
+        360
+      ],
+      "id": "dbdc620e-ca25-4e66-b6b7-a9f4fe2d9b2b",
+      "name": "On form submission",
+      "webhookId": "9aa351b9-8a05-4d60-9e6f-b9b808117329"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "binaryPropertyName": "INPUT",
+        "options": {}
+      },
+      "id": "b99ec8ce-a3f0-4e06-9daa-b1ba2c13541b",
+      "name": "Extract data from PDF",
+      "type": "n8n-nodes-base.extractFromFile",
+      "position": [
+        1020,
+        360
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um agente inteligente que auxilia estudantes a se prepararem para provas. Abaixo está o conteúdo extraído de um resumo enviado por um estudante. Com base nesse conteúdo, elabore uma lista de exercícios para ajudar na fixação dos temas abordados. Os exercícios devem ser coerentes com o nível de ensino e com os assuntos tratados no resumo.\n\n✅ Instruções:\n- Gere entre 5 e 10 exercícios, com enunciados claros.\n- Os exercícios podem variar entre questões objetivas, dissertativas e de verdadeiro/falso.\n- Caso o conteúdo permita, inclua pelo menos uma questão que envolva raciocínio ou aplicação prática.\n- Ao final, inclua um pequeno comentário indicando os tópicos centrais abordados nas perguntas.\n\n📄 Conteúdo do resumo:\n\"\"\"\n{{ $json.text }}\n\"\"\"\n\n🔁 Gere agora a lista de exercícios num formato html.\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.8,
+      "position": [
+        1720,
+        320
+      ],
+      "id": "8b882fc8-d496-46e1-aec4-43232f87d1b9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        1720,
+        600
+      ],
+      "id": "ccfbeb3f-ad1d-4861-abc8-511160ae8a54",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "2tEQeeEbDZpmQYz9",
+          "name": "Groq account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "c7fd7c59-160c-45e1-8b8d-1440cb5eb56e",
+              "name": "text",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1240,
+        360
+      ],
+      "id": "14dfb896-8508-498d-835b-8388552488f7",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "markdownToHtml",
+        "markdown": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        2200,
+        320
+      ],
+      "id": "bbb483dd-cff5-4355-8ab4-524cfaaf22fb",
+      "name": "Markdown"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "C:\\Users\\LETICIA\\OneDrive\\Área de Trabalho\\Estudos-25.1\\EngenhariaDeSoftware\\Exercicios.pdf",
+        "dataPropertyName": "=data",
+        "options": {}
+      },
+      "id": "4313c0ca-1572-4396-957e-fc0bf0875f2c",
+      "name": "Write Result File to Disk",
+      "type": "n8n-nodes-base.readWriteFile",
+      "position": [
+        3080,
+        320
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.data\nconst buffer = Buffer.from(text, 'utf8');\nconst binaryData = {\n  data: buffer.toString('base64'),\n  mimeType: 'application/octet-stream',\n  fileName: 'file.html',\n};\nitems[0].binary = { data: binaryData };\nreturn items;\n"
+      },
+      "id": "e725d549-a28c-4479-9f51-abdef424b27b",
+      "name": "Convert HTML to File",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2480,
+        320
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://v2.convertapi.com/convert/html/to/pdf?Secret=secret_2OoWbrHVo56zzOdG",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpQueryAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/octet-stream"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "id": "b45ce24e-05bb-4a65-ac36-66737041d75c",
+      "name": "Convert File to PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "position": [
+        2780,
+        320
+      ],
+      "notesInFlow": true,
+      "typeVersion": 4.2,
+      "credentials": {
+        "httpQueryAuth": {
+          "id": "k3Acz3MTKfwg7T5d",
+          "name": "Query Auth account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Extract data from PDF": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "On form submission": {
+      "main": [
+        [
+          {
+            "node": "Extract data from PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown": {
+      "main": [
+        [
+          {
+            "node": "Convert HTML to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert File to PDF": {
+      "main": [
+        [
+          {
+            "node": "Write Result File to Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert HTML to File": {
+      "main": [
+        [
+          {
+            "node": "Convert File to PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "8e831593-5b14-424f-9eaf-50c8fe035d3b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "87753c2fb208988818ee29c7fe506f3681628ffcb1de35bcef94b6edf16c9507"
+  },
+  "id": "4wuqXyQASWHKbk9L",
+  "tags": []
+}
